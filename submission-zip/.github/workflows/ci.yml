@@ -20,13 +20,10 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        working-directory: ./submission-zip
-        run: npm install
+        run: cd submission-zip && npm install
 
       - name: Run tests
-        working-directory: ./submission-zip
-        run: npm test --if-present
+        run: cd submission-zip && npm test --if-present
 
       - name: Build project
-        working-directory: ./submission-zip
-        run: npm run build
+        run: cd submission-zip && npm run build
