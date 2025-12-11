@@ -76,24 +76,47 @@ export class UIController {
      * @param {Array} data - Array of area objects to render
      */
     renderResults(data) {
-        const container = this.getResultsContainer();
-        
-        if (!data || data.length === 0) {
-            this.showEmptyState();
-            return;
-        }
+        try {
+            const container = this.getResultsContainer();
+            console.log('renderResults called with', data ? data.length : 0, 'items');
+            
+            if (!container) {
+                console.error('No results container found!');
+                return;
+            }
+            
+            if (!data || data.length === 0) {
+                console.log('Showing empty state');
+                this.showEmptyState();
+                return;
+            }
 
-        const resultsHTML = `
-            <div style="margin-bottom: 1rem; color: var(--secondary-color);">
-                <strong>${data.length}</strong> result${data.length !== 1 ? 's' : ''} found
-            </div>
-            ${data.map(item => this.createResultCard(item)).join('')}
-        `;
-        
-        container.innerHTML = resultsHTML;
-        
-        // Announce to screen readers
-        this.announceResults(data.length);
+            // Build results HTML - simpler version first
+            let html = `<div style="margin-bottom: 1rem; color: var(--secondary-color);"><strong>${data.length}</strong> result${data.length !== 1 ? 's' : ''} found</div>`;
+            
+            for (let i = 0; i < data.length && i < 100; i++) {
+                const item = data[i];
+                try {
+                    html += this.createResultCard(item);
+                } catch (cardError) {
+                    console.error('Error creating card for item:', item, cardError);
+                    html += `<div style="color: red;">Error rendering: ${item.name}</div>`;
+                }
+            }
+            
+            console.log('Setting innerHTML, length:', html.length);
+            container.innerHTML = html;
+            console.log('innerHTML set successfully');
+            
+            // Announce to screen readers
+            this.announceResults(data.length);
+        } catch (error) {
+            console.error('renderResults error:', error);
+            const container = this.getResultsContainer();
+            if (container) {
+                container.innerHTML = `<div style="color: red; padding: 1rem; background: #ffe0e0;">Error: ${error.message}</div>`;
+            }
+        }
     }
 
     /**

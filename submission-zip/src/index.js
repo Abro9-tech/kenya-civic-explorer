@@ -3,34 +3,45 @@ import { DataService } from './services/DataService.js';
 import { UIController } from './controllers/UIController.js';
 
 // Lazy-loaded utilities to enable code-splitting
-let debounce, validateInput, sanitizeHTML, StorageManager;
+let StorageManager;
 
 async function loadUtils() {
-    const [helpers, storage] = await Promise.all([
-        import('./utils/helpers.js'),
-        import('./utils/StorageManager.js')
-    ]);
-
-    debounce = helpers.debounce;
-    validateInput = helpers.validateInput;
-    sanitizeHTML = helpers.sanitizeHTML;
+    const storage = await import('./utils/StorageManager.js');
     // StorageManager may be a default export or named; support both
     StorageManager = storage.default || storage.StorageManager;
 }
 
 class App {
     constructor() {
+        console.log('App constructor: Initializing...');
         this.dataService = new DataService();
         this.uiController = new UIController();
-        this.storage = new StorageManager();
+        
+        // StorageManager should be available after loadUtils() completes
+        if (!StorageManager) {
+            console.error('StorageManager not loaded!');
+            // Create a dummy storage object to prevent crashes
+            this.storage = {
+                savePreferences: () => {},
+                loadPreferences: () => null,
+                clearPreferences: () => {}
+            };
+        } else {
+            this.storage = new StorageManager();
+        }
+        
         this.currentData = [];
         this.filteredData = [];
+        console.log('App constructor: Done');
     }
 
     async init() {
         try {
+            console.log('App.init(): Starting...');
+            
             // Offline short-circuit
             if (!navigator.onLine) {
+                console.warn('App offline');
                 this.uiController.showError('You are offline. Please check your connection and retry.', true);
                 this.attachRetryHandler();
                 return;
@@ -50,6 +61,8 @@ class App {
 
             // Initial render
             this.applyFilters();
+            
+            console.log('App.init(): Complete');
 
         } catch (error) {
             console.error('App initialization error:', error);
@@ -95,14 +108,18 @@ class App {
 
     async loadData() {
         try {
+            console.log('loadData(): Fetching areas...');
             // Fetch all Kenya area data
             this.currentData = await this.dataService.fetchAllAreas();
+            console.log('loadData(): Fetched', this.currentData.length, 'items');
             
             // Update statistics
             this.updateStatistics();
+            console.log('loadData(): Statistics updated');
             
             // Populate county filter
             this.populateCountyFilter();
+            console.log('loadData(): County filter populated');
             
         } catch (error) {
             console.error('Data loading error:', error);
@@ -137,11 +154,16 @@ class App {
         const sortBy = document.getElementById('sort-by');
         const resetBtn = document.getElementById('reset-filters');
 
-        // Debounced search for performance
-        const debouncedSearch = debounce(() => {
-            this.applyFilters();
-            this.savePreferences();
-        }, 300);
+        // Create debouncedSearch without relying on async debounce
+        // Simple debounce implementation
+        let timeout;
+        const debouncedSearch = () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                this.applyFilters();
+                this.savePreferences();
+            }, 300);
+        };
 
         searchInput.addEventListener('input', debouncedSearch);
         
@@ -173,10 +195,22 @@ class App {
     }
 
     applyFilters() {
-        const searchTerm = validateInput(document.getElementById('search-input').value).toLowerCase();
-        const selectedCounty = document.getElementById('filter-county').value;
-        const selectedType = document.getElementById('filter-type').value;
-        const sortBy = document.getElementById('sort-by').value;
+        const searchInput = document.getElementById('search-input');
+        const countySelect = document.getElementById('filter-county');
+        const typeSelect = document.getElementById('filter-type');
+        const sortSelect = document.getElementById('sort-by');
+        
+        if (!searchInput || !this.currentData) {
+            console.warn('Missing DOM elements or data', { searchInput: !!searchInput, data: !!this.currentData });
+            return;
+        }
+        
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const selectedCounty = countySelect.value;
+        const selectedType = typeSelect.value;
+        const sortBy = sortSelect.value;
+
+        console.log('applyFilters:', { searchTerm, selectedCounty, selectedType, sortBy, totalData: this.currentData.length });
 
         // Filter data
         this.filteredData = this.currentData.filter(item => {
@@ -189,6 +223,15 @@ class App {
             
             return matchesSearch && matchesCounty && matchesType;
         });
+
+        console.log('Filtered results count:', this.filteredData.length);
+
+        // Update statistics with FILTERED data (accurate counts for current search)
+        const stats = this.dataService.calculateStatistics(this.filteredData);
+        document.getElementById('stat-counties').textContent = stats.counties;
+        document.getElementById('stat-constituencies').textContent = stats.constituencies;
+        document.getElementById('stat-wards').textContent = stats.wards;
+        console.log('Stats updated:', stats);
 
         // Sort data
         this.filteredData = this.dataService.sortData(this.filteredData, sortBy);
@@ -209,7 +252,7 @@ class App {
 
     savePreferences() {
         const preferences = {
-            search: validateInput(document.getElementById('search-input').value),
+            search: document.getElementById('search-input').value,
             county: document.getElementById('filter-county').value,
             type: document.getElementById('filter-type').value,
             sort: document.getElementById('sort-by').value
@@ -223,7 +266,7 @@ class App {
         
         if (preferences) {
             if (preferences.search) {
-                document.getElementById('search-input').value = validateInput(preferences.search);
+                document.getElementById('search-input').value = preferences.search;
             }
             if (preferences.county) {
                 document.getElementById('filter-county').value = preferences.county;

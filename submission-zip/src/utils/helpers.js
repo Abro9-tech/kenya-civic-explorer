@@ -1,5 +1,4 @@
 // Helper utility functions
-import DOMPurify from "dompurify";
 
 /**
  * Validate and sanitize search input
@@ -8,10 +7,8 @@ import DOMPurify from "dompurify";
  */
 export function validateInput(value) {
     if (typeof value !== 'string') return '';
-    // Trim and remove disallowed characters; allow letters, numbers, space and basic punctuation
     let v = value.trim();
     v = v.replace(/[^A-Za-z0-9 .,!?-]/g, '');
-    // Collapse multiple whitespace characters into a single space
     v = v.replace(/\s+/g, ' ');
     return v;
 }
@@ -70,19 +67,17 @@ export function escapeHTML(unsafe) {
 }
 
 /**
- * Sanitize HTML (basic implementation)
- * @param {string} html - HTML string
- * @returns {string} Sanitized HTML
+ * Sanitize HTML by converting to text then back to HTML (XSS safe)
+ * @param {string} str - String to sanitize
+ * @returns {string} Sanitized HTML-safe string
  */
 export const sanitizeHTML = (str) => {
-    try {
-        return DOMPurify.sanitize(String(str));
-    } catch (e) {
-        // Fallback to textContent approach if DOMPurify is unavailable
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+    if (!str) return '';
+    const stringVal = String(str);
+    // Create a temporary element and use textContent (safer than innerHTML)
+    const div = document.createElement('div');
+    div.textContent = stringVal;
+    return div.innerHTML;
 };
 
 /**
