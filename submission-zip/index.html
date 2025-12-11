@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kenya Civic Data Explorer - Search and visualize county, constituency, and ward data">
+    <title>Kenya Civic Data Explorer</title>
+    
+    <!-- CSS Framework - Milligram (2KB, zero-build) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #9b4dca;
+            --secondary-color: #606c76;
+            --success-color: #32b643;
+            --error-color: #e85600;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 3rem;
+            margin-top: 2rem;
+        }
+        
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .hero h1 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .search-box {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+        
+        .search-box input {
+            padding-left: 2.5rem;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-color);
+        }
+        
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .results {
+            margin-top: 2rem;
+        }
+        
+        .result-card {
+            border: 1px solid #d1d1d1;
+            border-radius: 4px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .result-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .result-card h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: #f4f5f6;
+            color: var(--secondary-color);
+            margin-right: 0.5rem;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .stat-card h2 {
+            color: white;
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        
+        .stat-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--secondary-color);
+        }
+        
+        .error {
+            background: #fdecea;
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--secondary-color);
+        }
+        
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+        }
+        
+        /* Accessibility improvements */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            border: 0;
+        }
+        
+        button:focus, input:focus, select:focus {
+            outline: 3px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+            
+            .filters {
+                flex-direction: column;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="hero">
+            <h1>🇰🇪 Kenya Civic Data Explorer</h1>
+            <p>Explore counties, constituencies, and wards across Kenya</p>
+        </header>
+        
+        <main>
+            <!-- Statistics Dashboard -->
+            <section class="stats" id="stats" aria-label="Data statistics">
+                <div class="stat-card">
+                    <h2 id="stat-counties">--</h2>
+                    <p>Counties</p>
+                </div>
+                <div class="stat-card">
+                    <h2 id="stat-constituencies">--</h2>
+                    <p>Constituencies</p>
+                </div>
+                <div class="stat-card">
+                    <h2 id="stat-wards">--</h2>
+                    <p>Wards</p>
+                </div>
+            </section>
+            
+            <!-- Search and Filters -->
+            <section aria-label="Search and filter controls">
+                <div class="search-box">
+                    <label for="search-input" class="visually-hidden">Search areas</label>
+                    <span class="search-icon" aria-hidden="true">🔍</span>
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Search counties, constituencies, or wards..."
+                        aria-label="Search for Kenya administrative areas"
+                        oninput="this.value=this.value.replace(/[^A-Za-z0-9 .,!?-]/g,'')"
+                    >
+                </div>
+                
+                <div class="filters">
+                    <div class="filter-group">
+                        <label for="filter-county">Filter by County</label>
+                        <select id="filter-county" aria-label="Filter by county">
+                            <option value="">All Counties</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="filter-type">Area Type</label>
+                        <select id="filter-type" aria-label="Filter by area type">
+                            <option value="">All Types</option>
+                            <option value="county">County</option>
+                            <option value="constituency">Constituency</option>
+                            <option value="ward">Ward</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="sort-by">Sort By</label>
+                        <select id="sort-by" aria-label="Sort results">
+                            <option value="name">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="type">Type</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="reset-filters" class="button button-outline">Reset Filters</button>
+            </section>
+            
+            <!-- Results Section -->
+            <section class="results" aria-live="polite" aria-label="Search results">
+                <div id="results-container"></div>
+            </section>
+        </main>
+        
+        <footer style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #d1d1d1; color: var(--secondary-color);">
+            <p>Data source: Kenya Area Data API | USIU-Africa IST4035 Coursework</p>
+            <p><small>Built with accessibility and performance in mind</small></p>
+        </footer>
+    </div>
+    
+    <script type="module" src="src/index.js"></script>
+</body>
+</html>
