@@ -11,22 +11,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Use Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-    - name: Install dependencies
-      working-directory: ./submission-zip
-      run: npm install
+      - name: Install dependencies
+        working-directory: ./submission-zip
+        run: npm install
 
-- name: Run tests
-      working-directory: ./submission-zip
-      run: npm test --if-present
+      - name: Run tests
+        working-directory: ./submission-zip
+        run: npm test --if-present
 
-    - name: Build project
-      working-directory: ./submission-zip
-      run: npm run build
+      - name: Build project
+        working-directory: ./submission-zip
+        run: npm run build
